@@ -59,7 +59,7 @@ pub struct Revision {
 impl Revision {
     pub fn validate(&self) -> Result<()> {
         if self.schema != 1 {
-            bail!("云端数据格式需要更新版本的轻笺");
+            bail!("云端数据格式需要更新版本的haonote");
         }
         Uuid::parse_str(&self.id)?;
         Uuid::parse_str(&self.note_id)?;

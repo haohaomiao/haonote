@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "QingNote",
+  "productName": "haonote",
   "version": "0.1.1",
   "identifier": "app.qingnote.desktop",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [{
       "label": "main",
-      "title": "轻笺 QingNote",
+      "title": "haonote",
       "width": 1120,
       "height": 760,
       "minWidth": 760,
@@ -27,8 +27,9 @@
     "active": true,
     "targets": ["deb", "appimage"],
     "category": "Productivity",
+    "linux": { "deb": { "conflicts": ["qing-note"], "replaces": ["qing-note"] } },
     "shortDescription": "Offline-first sticky notes with WebDAV sync",
-    "longDescription": "QingNote is a simple sticky notes application. Write offline, pin notes on your desktop, and sync through your own WebDAV account.",
+    "longDescription": "haonote is a simple sticky notes application. Write offline, pin notes on your desktop, and sync through your own WebDAV account.",
     "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
     "windows": { "nsis": { "languages": ["SimpChinese", "English"], "displayLanguageSelector": false } }
   }

@@ -24,7 +24,7 @@ impl Store {
         let conn = Connection::open(path)?;
         let version: i64 = conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
         if version > 1 {
-            bail!("资料库由更新版本的轻笺创建，请升级应用后再打开");
+            bail!("资料库由更新版本的haonote创建，请升级应用后再打开");
         }
         conn.busy_timeout(std::time::Duration::from_secs(5))?;
         conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;
@@ -320,7 +320,7 @@ impl Store {
         if json.len() > 32 * 1024 * 1024 {
             bail!("备份文件超过 32 MB，无法导入");
         }
-        let backup: Backup = serde_json::from_str(json).context("不是有效的轻笺 JSON 备份")?;
+        let backup: Backup = serde_json::from_str(json).context("不是有效的haonote JSON 备份")?;
         if backup.format != "qingnote-backup" || backup.version != 1 {
             bail!("不支持的备份版本");
         }

@@ -333,7 +333,7 @@ pub async fn import_notes(app: AppHandle) -> CommandResult<Option<usize>> {
         let Some(path) = app
             .dialog()
             .file()
-            .add_filter("轻笺 JSON 备份", &["json"])
+            .add_filter("haonote JSON 备份", &["json"])
             .blocking_pick_file()
         else {
             return Ok(None);

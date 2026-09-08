@@ -9,7 +9,7 @@
 本地源码已准备为 main 分支提交。在项目目录运行，替换实际仓库地址：
 
 ```sh
-git remote add origin https://github.com/OWNER/REPO.git
+git remote add origin git@github.com:haohaomiao/haonote.git
 git push -u origin main
 ```
 
@@ -20,7 +20,7 @@ git push -u origin main
 推送 main 后，Actions 检查并构建 Linux / Windows 安装包。确认代码后创建版本标签：
 
 ```sh
-git tag -a v0.1.1 -m "QingNote 0.1.1"
+git tag -a v0.1.1 -m "haonote 0.1.1"
 git push origin v0.1.1
 ```
 

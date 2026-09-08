@@ -201,7 +201,7 @@ fn open_note_window(app: &AppHandle, note_id: &str) -> anyhow::Result<()> {
         &label,
         WebviewUrl::App(format!("index.html?note={note_id}").into()),
     )
-    .title("轻笺")
+    .title("haonote")
     .decorations(false)
     .transparent(true)
     .inner_size(
@@ -366,11 +366,11 @@ pub fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
     let new = MenuItem::with_id(app, "new", "新建便签", true, None::<&str>)?;
     let library = MenuItem::with_id(app, "library", "打开便签列表", true, None::<&str>)?;
     let toggle = MenuItem::with_id(app, "toggle", "显示 / 隐藏便签", true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", "退出轻笺", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "退出haonote", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&new, &library, &toggle, &quit])?;
     let mut tray = TrayIconBuilder::new()
         .menu(&menu)
-        .tooltip("轻笺 QingNote")
+        .tooltip("haonote")
         .on_menu_event(|app, event| match event.id.as_ref() {
             "library" => {
                 let _ = show_main(app);

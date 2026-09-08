@@ -173,7 +173,7 @@ try {
     execFileSync('xprop', ['-id', xid, '_NET_WM_NAME', '_NET_WM_STATE'], { env, encoding: 'utf8' }),
   );
   assert.ok(
-    properties.some((p) => p.includes('"轻笺"') && p.includes('_NET_WM_STATE_ABOVE')),
+    properties.some((p) => p.includes('"haonote"') && p.includes('_NET_WM_STATE_ABOVE')),
     'the actual X11 note window must be above other windows',
   );
   await until(() => invoke('get_pinned'), 'pin window');
@@ -369,7 +369,7 @@ try {
     ['退出前的最后一笔'],
   );
   await wd('/window', 'POST', { handle: main });
-  await click('退出轻笺');
+  await click('退出haonote');
   await until(async () => {
     try {
       return (await wd('/window/handles')).length === 0;

@@ -162,7 +162,7 @@
         <summary>如何获取坚果云应用密码？</summary>
         <ol>
           <li>登录坚果云网页版，进入「账户信息 → 安全选项」。</li>
-          <li>在「第三方应用管理」中添加应用，命名为“轻笺”。</li>
+          <li>在「第三方应用管理」中添加应用，命名为“haonote”。</li>
           <li>复制生成的应用密码，填入上方。其他设备填写相同账号和目录。</li>
         </ol>
         <p>
@@ -186,7 +186,7 @@
     <div class="preference-row">
       <div>
         <h3>开机启动</h3>
-        <p>登录电脑后自动打开轻笺。</p>
+        <p>登录电脑后自动打开haonote。</p>
       </div>
       <button
         class="switch"
@@ -209,7 +209,7 @@
     </div>
     <div class="data-location"><span>本地资料库</span><code>{dataDirectory}</code></div>
     <p class="small-note">
-      轻笺 0.1.0 · 自动同步约每 2 分钟一次。关闭便签仅收起窗口，回收站不会自动清空。
+      haonote 0.1.1 · 自动同步约每 2 分钟一次。关闭便签仅收起窗口，回收站不会自动清空。
     </p>
   </div>
 </dialog>

@@ -6,9 +6,9 @@
 
 本地交付目录为 `artifacts/releases/0.1.1/`：
 
-- Ubuntu 24.04 x86_64：`QingNote_0.1.1_amd64.deb`
-- Linux x86_64：`QingNote_0.1.1_amd64.AppImage`
-- Windows x64：`QingNote_0.1.1_x64-setup.exe`
+- Ubuntu 24.04 x86_64：`haonote_0.1.1_amd64.deb`
+- Linux x86_64：`haonote_0.1.1_amd64.AppImage`
+- Windows x64：`haonote_0.1.1_x64-setup.exe`
 
 先导出 JSON 备份，正常退出旧版，再安装新版。正式版沿用原资料库；开发版资料库独立，需要手动导出、导入。同步设备请全部升级，旧版本会拒绝新增的独立标题字段。
 
@@ -16,7 +16,7 @@
 
 ```sh
 sha256sum --check docs/SHA256SUMS
-sudo apt install ./artifacts/releases/0.1.1/QingNote_0.1.1_amd64.deb
+sudo apt install ./artifacts/releases/0.1.1/haonote_0.1.1_amd64.deb
 ```
 
 AppImage 需要可执行权限和相应运行环境；基于 Ubuntu 24.04 构建，不承诺旧发行版兼容。Windows 安装包未签名；缺少 WebView2 时需联网下载微软运行时，离线机器请预先安装。

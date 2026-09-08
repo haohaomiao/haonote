@@ -64,7 +64,7 @@ jobs:
           xvfb-run -a dbus-run-session -- node tests/native.mjs
       - uses: actions/upload-artifact@v7
         with:
-          name: QingNote-${{ matrix.os }}
+          name: haonote-${{ matrix.os }}
           if-no-files-found: error
           path: |
             target/release/bundle/deb/*.deb
@@ -90,7 +90,7 @@ jobs:
           persist-credentials: false
       - uses: actions/download-artifact@v7
         with:
-          pattern: QingNote-*
+          pattern: haonote-*
           path: release-artifacts
           merge-multiple: true
       - name: Prepare release assets
@@ -109,5 +109,5 @@ jobs:
         run: |
           gh release create "$GITHUB_REF_NAME" release-assets/* \
             --verify-tag --draft --prerelease \
-            --title "QingNote $GITHUB_REF_NAME" \
+            --title "haonote $GITHUB_REF_NAME" \
             --notes-file "docs/releases/$GITHUB_REF_NAME.md"

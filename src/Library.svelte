@@ -223,7 +223,7 @@
   <aside class="sidebar">
     <div class="brand">
       <span class="brand-icon"><StickyNote size={23} strokeWidth={1.6} /></span>
-      <div><strong>轻笺</strong><small>QINGNOTE</small></div>
+      <div><strong>haonote</strong><small>HAONOTE</small></div>
     </div>
     <button class="new-button" onclick={create} disabled={busy}
       ><Plus size={18} />新建便签<span>⌘ / Ctrl N</span></button
@@ -269,9 +269,9 @@
         ><Settings size={17} />设置与同步</button
       >
       {#if native}<button class="sidebar-settings subtle" onclick={quit}
-          ><LogOut size={16} />退出轻笺</button
+          ><LogOut size={16} />退出haonote</button
         >{/if}
-      <span class="version">QingNote · 0.1.1</span>
+      <span class="version">haonote · 0.1.1</span>
     </div>
   </aside>
 
@@ -407,7 +407,7 @@
       <div>
         <button onclick={() => backup(false)} disabled={!native || busy} title="导出完整备份"
           ><Download size={14} />导出</button
-        ><button onclick={restore} disabled={!native || busy} title="合并导入轻笺备份"
+        ><button onclick={restore} disabled={!native || busy} title="合并导入haonote备份"
           ><Upload size={14} />导入</button
         >
       </div>

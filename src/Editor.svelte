@@ -72,7 +72,7 @@
         .trim()
         .split('\n')[0]
         .replace(/^#{1,6}\s+/, '') ||
-      '轻笺',
+      'haonote',
   );
   const font = $derived(fonts.find((f) => f.value === view.fontFamily)?.css || fonts[0].css);
 

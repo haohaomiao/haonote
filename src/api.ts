@@ -8,7 +8,7 @@ const preview = !native && import.meta.env.DEV ? import('./preview') : null;
 export async function call<T>(command: string, args: Record<string, unknown> = {}): Promise<T> {
   if (native) return invoke<T>(command, args);
   if (preview) return (await preview).invokePreview(command, args) as Promise<T>;
-  throw new Error('请使用轻笺桌面安装版');
+  throw new Error('请使用haonote桌面安装版');
 }
 export async function on(event: string, callback: (payload: unknown) => void): Promise<() => void> {
   if (native) return listen(event, (e) => callback(e.payload));

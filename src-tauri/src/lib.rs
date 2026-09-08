@@ -96,7 +96,7 @@ pub fn run() {
             windows::editor_ids
         ])
         .build(tauri::generate_context!())
-        .expect("无法启动轻笺")
+        .expect("无法启动haonote")
         .run(|app, event| {
             if let tauri::RunEvent::ExitRequested { ref api, code, .. } = event {
                 if code.is_none() {
