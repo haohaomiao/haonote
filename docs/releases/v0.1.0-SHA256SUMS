@@ -1,0 +1,3 @@
+6d77e915790429ae919c4b7e5135a5ecbfb8fa95f7664e5a25315ae847aa8c3a  target/release/bundle/deb/QingNote_0.1.0_amd64.deb
+3eda3d2a2749613c1d22a3ac7ab113d760ab9597f623e51b7d8df189de3d56c1  target/release/bundle/appimage/QingNote_0.1.0_amd64.AppImage
+1f499758104ca5a3f8a77ae74390d6904586bafadee8058a0e389bb5cfdb9ceb  target/x86_64-pc-windows-msvc/release/bundle/nsis/QingNote_0.1.0_x64-setup.exe

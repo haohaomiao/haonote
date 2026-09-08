@@ -1,0 +1,42 @@
+{
+  "name": "qingnote",
+  "version": "0.1.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "svelte-check --tsconfig ./tsconfig.json && vite build",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "tauri": "tauri",
+    "desktop": "node scripts/desktop.mjs",
+    "bundle": "tauri build",
+    "test:core": "cargo test -p qingnote-core",
+    "test:ui": "playwright test",
+    "format": "prettier --write src tests scripts && cargo fmt --all",
+    "format:check": "prettier --check src tests scripts"
+  },
+  "dependencies": {
+    "@lucide/svelte": "^1.42.0",
+    "@tauri-apps/api": "^2.10.0",
+    "@tiptap/core": "^3.31.3",
+    "@tiptap/extension-table": "^3.31.3",
+    "@tiptap/extension-task-item": "^3.31.3",
+    "@tiptap/extension-task-list": "^3.31.3",
+    "@tiptap/extension-underline": "^3.31.3",
+    "@tiptap/markdown": "^3.31.3",
+    "@tiptap/starter-kit": "^3.31.3",
+    "dompurify": "^3.4.15",
+    "marked": "^18.0.12",
+    "svelte": "^5.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.0",
+    "@sveltejs/vite-plugin-svelte": "^5.0.0",
+    "@tauri-apps/cli": "^2.10.0",
+    "prettier": "^3.9.6",
+    "prettier-plugin-svelte": "^4.1.1",
+    "svelte-check": "^4.0.0",
+    "typescript": "~5.7.2",
+    "vite": "^6.0.0"
+  }
+}

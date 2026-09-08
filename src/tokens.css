@@ -1,0 +1,30 @@
+:root {
+  --canvas: #f8f8f2;
+  --ink: #384331;
+  --green: #5d744b;
+  --line: #e5e7dc;
+  --butter: #f4edbf;
+  --sage: #e1eacd;
+  --sky: #dfeaf0;
+  --rose: #f1ded6;
+  --lilac: #e7e1f0;
+  --paper: #eeeee5;
+}
+.note-butter {
+  background-color: var(--butter);
+}
+.note-sage {
+  background-color: var(--sage);
+}
+.note-sky {
+  background-color: var(--sky);
+}
+.note-rose {
+  background-color: var(--rose);
+}
+.note-lilac {
+  background-color: var(--lilac);
+}
+.note-paper {
+  background-color: var(--paper);
+}

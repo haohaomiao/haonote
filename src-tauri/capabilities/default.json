@@ -1,0 +1,16 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "desktop",
+  "description": "Local UI windows only; networking and files are handled by narrow Rust commands.",
+  "windows": ["main", "note-*"],
+  "permissions": [
+    "core:event:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-start-resize-dragging",
+    "core:window:allow-inner-size",
+    "core:window:allow-scale-factor",
+    "core:menu:allow-new",
+    "core:menu:allow-popup",
+    "core:resources:allow-close"
+  ]
+}
