@@ -51,7 +51,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           npx playwright install --with-deps chromium
-          npm run test:ui
+          npm run test:ui -- --reporter=list,github
       - name: Build installers
         run: npm run tauri -- build --bundles ${{ matrix.bundles }}
       - name: Native Linux smoke test
