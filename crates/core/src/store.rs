@@ -337,6 +337,18 @@ impl Store {
         Ok(self.known_ids()?.len() - before)
     }
 
+    pub fn import_sticky_notes(&mut self, path: &Path) -> Result<usize> {
+        let existing: HashSet<_> = self.all()?.into_iter().map(|r| r.note_id).collect();
+        let revisions: Vec<_> = crate::sticky_import::read(path)?
+            .into_iter()
+            .filter(|r| !existing.contains(&r.note_id))
+            .collect();
+        // One atomic merge. Never re-import a note already migrated, even if it
+        // was edited/deleted here or changed in a later source backup.
+        self.insert_batch(&revisions, false)?;
+        Ok(revisions.len())
+    }
+
     pub fn setting<T: serde::de::DeserializeOwned>(&self, key: &str) -> Result<Option<T>> {
         let value: Option<String> = self
             .conn

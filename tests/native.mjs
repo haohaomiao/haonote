@@ -345,7 +345,7 @@ try {
   await sleep(600);
   execFileSync(
     process.env.XDOTOOL_PATH || 'xdotool',
-    ['key', '--clearmodifiers', 'Down', 'Return'],
+    ['key', '--clearmodifiers', 'Down', 'Down', 'Down', 'Down', 'Return'],
     { env },
   );
   await until(
@@ -358,6 +358,35 @@ try {
   await until(
     () => execute('return document.querySelector(".tiptap").textContent.includes("原生排版编辑")'),
     'native direct rich editing',
+  );
+  const clipboardText = await execute('return document.querySelector(".tiptap").textContent');
+  await execute(
+    `const el=document.querySelector('.tiptap');el.focus();const range=document.createRange();range.selectNodeContents(el);const selection=getSelection();selection.removeAllRanges();selection.addRange(range);`,
+  );
+  await sleep(100);
+  async function clipboardMenu(index) {
+    await execute(
+      `document.querySelector('.tiptap').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:80,clientY:80}));`,
+    );
+    await sleep(600);
+    execFileSync(
+      process.env.XDOTOOL_PATH || 'xdotool',
+      ['key', '--clearmodifiers', ...Array(index).fill('Down'), 'Return'],
+      { env },
+    );
+  }
+  await clipboardMenu(2); // Copy preserves the selection and text.
+  assert.equal(
+    await execute('return document.querySelector(".tiptap").textContent'),
+    clipboardText,
+  );
+  await clipboardMenu(1); // Cut writes before deleting.
+  await until(() => execute('return !document.querySelector(".tiptap").textContent'), 'native cut');
+  await clipboardMenu(3);
+  await until(
+    async () =>
+      (await execute('return document.querySelector(".tiptap").textContent')) === clipboardText,
+    'native clipboard paste',
   );
   await click('切换到 Markdown 源码');
   await until(

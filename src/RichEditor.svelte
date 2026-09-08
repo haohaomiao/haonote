@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { Editor } from '@tiptap/core';
+  import { closeHistory } from '@tiptap/pm/history';
   import DOMPurify from 'dompurify';
   import { richExtensions, sameMarkdownMeaning, unsupportedMarkdown } from './rich-text';
   import { renderMarkdown } from './markdown';
@@ -62,6 +63,18 @@
   export function canEdit() {
     return !!instance && !disabled && !warning;
   }
+  export function restoreSelection() {
+    if (!instance) return;
+    instance.commands.focus();
+    if (selection) instance.commands.setTextSelection(selection);
+  }
+  export function paste(text: string, html?: string) {
+    if (!canEdit()) return;
+    restoreSelection();
+    if (html) instance!.view.pasteHTML(html);
+    else instance!.view.pasteText(text);
+    captureSelection();
+  }
   export function active(kind: string) {
     return instance?.isActive(kind) ?? false;
   }
@@ -73,6 +86,8 @@
       content: '',
       injectCSS: false,
       editorProps: {
+        // In-editor dragging moves the selection; external drops remain inserts.
+        dragCopies: () => false,
         attributes: {
           role: 'textbox',
           'aria-label': '排版正文',
@@ -86,6 +101,11 @@
             FORBID_ATTR: ['src', 'srcset', 'style'],
           }),
         handleDOMEvents: {
+          dragstart: (view) => {
+            // A drag is one undo step, separate from the immediately preceding typing.
+            view.dispatch(closeHistory(view.state.tr));
+            return false;
+          },
           contextmenu: (_view, event) => {
             captureSelection();
             oncontextmenu(event);

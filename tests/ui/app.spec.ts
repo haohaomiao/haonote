@@ -1,5 +1,85 @@
 import { test, expect } from '@playwright/test';
 
+test('clipboard menu and system shortcuts preserve rich text and undo', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.goto('/');
+  await page.getByRole('button', { name: '写下第一张便签' }).click();
+  const rich = page.getByRole('textbox', { name: '排版正文' });
+  await rich.fill('剪贴板测试');
+  await rich.press('Control+a');
+  await rich.press('Control+b');
+  await rich.click({ button: 'right' });
+  await page.getByRole('button', { name: '复制', exact: true }).click();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('剪贴板测试');
+  await rich.press('End');
+  await rich.click({ button: 'right' });
+  await page.getByRole('button', { name: '粘贴', exact: true }).click();
+  await expect(rich).toHaveText('剪贴板测试剪贴板测试');
+  await rich.press('Control+z');
+  await expect(rich).toHaveText('剪贴板测试');
+  await rich.press('Control+a');
+  await rich.click({ button: 'right' });
+  await page.getByRole('button', { name: '剪切', exact: true }).click();
+  await expect(rich).toHaveText('');
+  await rich.press('Control+v');
+  await expect(rich.locator('strong')).toHaveText('剪贴板测试');
+  await page.getByRole('button', { name: '切换到 Markdown 源码' }).click();
+  const raw = page.getByRole('textbox', { name: '便签内容' });
+  await raw.selectText();
+  await raw.press('Control+x');
+  await expect(raw).toHaveValue('');
+  await raw.press('Control+v');
+  await expect(raw).toHaveValue('**剪贴板测试**');
+});
+
+test('dragging a rich selection moves it once and can be undone', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: '写下第一张便签' }).click();
+  const rich = page.getByRole('textbox', { name: '排版正文' });
+  await rich.fill('ABC def');
+  await rich.press('Home');
+  for (let i = 0; i < 3; i++) await rich.press('Shift+ArrowRight');
+  // Let the browser selectionchange reach ProseMirror before synthetic drag events.
+  await page.waitForTimeout(100);
+  await rich.evaluate((el) => {
+    const text = el.querySelector('p')!.firstChild!;
+    const from = document.createRange();
+    from.setStart(text, 1);
+    from.setEnd(text, 2);
+    const start = from.getBoundingClientRect();
+    const end = document.createRange();
+    end.setStart(text, 7);
+    end.collapse(true);
+    const target = end.getBoundingClientRect();
+    const dataTransfer = new DataTransfer();
+    el.dispatchEvent(
+      new DragEvent('dragstart', {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer,
+        clientX: start.x,
+        clientY: start.y + 5,
+      }),
+    );
+    el.dispatchEvent(
+      new DragEvent('drop', {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer,
+        clientX: target.x,
+        clientY: target.y + 5,
+      }),
+    );
+    el.dispatchEvent(new DragEvent('dragend', { bubbles: true, dataTransfer }));
+  });
+  await expect(rich).toHaveText(' defABC');
+  await rich.press('Control+z');
+  await expect(rich).toHaveText('ABC def');
+});
+
 test('editable Markdown preserves tables, tasks, code, links and source on a no-op switch', async ({
   page,
 }) => {

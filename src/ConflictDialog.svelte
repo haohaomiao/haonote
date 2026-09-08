@@ -44,7 +44,6 @@
 >
   <header class="dialog-header">
     <div>
-      <p class="eyebrow">KEEP EVERY THOUGHT</p>
       <h2>处理便签冲突</h2>
     </div>
     <button class="icon-button" aria-label="关闭冲突处理" onclick={onclose} disabled={busy}

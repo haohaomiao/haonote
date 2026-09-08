@@ -47,8 +47,8 @@
     conflicts: '待处理冲突',
   };
   const descriptions: Record<Filter, string> = {
-    active: '把想法放在眼前，把琐事留在这里。',
-    archived: '暂时收好的事情，随时可以找回来。',
+    active: '',
+    archived: '已归档的便签可以恢复。',
     deleted: '删除的便签留在这里，可以随时恢复。',
     conflicts: '不同设备的修改都在，选一个版本或把它们合并。',
   };
@@ -127,11 +127,13 @@
       if (path) notice = `已导出到 ${path}`;
     });
   }
-  async function restore() {
+  async function restore(simpleSticky = false) {
     await task(async () => {
-      const count = await call<number | null>('import_notes');
+      const count = await call<number | null>('import_notes', { simpleSticky });
       if (count !== null) {
-        notice = `已合并导入 ${count} 个版本，原有便签保留`;
+        notice = simpleSticky
+          ? `已导入 ${count} 条新便签（含回收站），重复便签已跳过`
+          : `已合并导入 ${count} 个版本，原有便签保留`;
         await refresh();
       }
     });
@@ -223,7 +225,7 @@
   <aside class="sidebar">
     <div class="brand">
       <span class="brand-icon"><StickyNote size={23} strokeWidth={1.6} /></span>
-      <div><strong>haonote</strong><small>HAONOTE</small></div>
+      <div><strong>haonote</strong></div>
     </div>
     <button class="new-button" onclick={create} disabled={busy}
       ><Plus size={18} />新建便签<span>⌘ / Ctrl N</span></button
@@ -252,16 +254,12 @@
         <Cloud size={18} />
         <div>
           <strong
-            >{status.running
-              ? '正在同步'
-              : status.lastSuccess
-                ? '已连接云端'
-                : '安心记在本机'}</strong
+            >{status.running ? '正在同步' : status.lastSuccess ? '已连接云端' : '本地保存'}</strong
           >
           <p>
             {status.lastSuccess
               ? `上次同步 ${new Date(status.lastSuccess).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`
-              : '连接 WebDAV，让便签随你走。'}
+              : '尚未配置云同步'}
           </p>
         </div>
       </div>
@@ -271,7 +269,7 @@
       {#if native}<button class="sidebar-settings subtle" onclick={quit}
           ><LogOut size={16} />退出haonote</button
         >{/if}
-      <span class="version">haonote · 0.1.1</span>
+      <span class="version">haonote · 0.1.2</span>
     </div>
   </aside>
 
@@ -291,11 +289,9 @@
       </div>{/if}
     <header class="page-heading">
       <div>
-        <div class="eyebrow">A LITTLE SPACE FOR YOUR THOUGHTS</div>
         <h1>{labels[filter]}<span>{visible.length}</span></h1>
-        <p>{descriptions[filter]}</p>
+        {#if descriptions[filter]}<p>{descriptions[filter]}</p>{/if}
       </div>
-      <span class="paper-mark" aria-hidden="true"><StickyNote size={40} strokeWidth={1} /></span>
     </header>
     <div class="toolbar">
       <label class="search"
@@ -330,7 +326,7 @@
                 {(note.content.title?.trim()
                   ? note.content.text
                   : note.content.text.trim().split('\n').slice(1).join('\n')) ||
-                  (note.content.text ? '' : '一点想法，就从这里开始。')}
+                  (note.content.text ? '' : '空便签')}
               </p>
             </button>
             {#if note.conflicts.length}<button
@@ -407,8 +403,13 @@
       <div>
         <button onclick={() => backup(false)} disabled={!native || busy} title="导出完整备份"
           ><Download size={14} />导出</button
-        ><button onclick={restore} disabled={!native || busy} title="合并导入haonote备份"
+        ><button onclick={() => restore()} disabled={!native || busy} title="合并导入haonote备份"
           ><Upload size={14} />导入</button
+        >
+        <button
+          onclick={() => restore(true)}
+          disabled={!native || busy}
+          title="从 Simple Sticky Notes 的备份数据库导入纯文本便签">导入旧便签</button
         >
       </div>
     </footer>

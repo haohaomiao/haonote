@@ -328,12 +328,22 @@ pub async fn export_notes(app: AppHandle, plain_text: bool) -> CommandResult<Opt
 }
 
 #[tauri::command]
-pub async fn import_notes(app: AppHandle) -> CommandResult<Option<usize>> {
+pub async fn import_notes(
+    app: AppHandle,
+    simple_sticky: Option<bool>,
+) -> CommandResult<Option<usize>> {
     tauri::async_runtime::spawn_blocking(move || -> Result<Option<usize>> {
+        let simple_sticky = simple_sticky.unwrap_or(false);
+        if simple_sticky && !app.dialog().message("将只读导入 Simple Sticky Notes 备份中的标题和纯文本正文，近似匹配颜色；已删除便签进入回收站。RTF 格式、闹钟和窗口布局不导入。重复导入跳过已有便签，不覆盖本地修改。导入后将按当前设置参与云同步。请先退出来源软件或选择其备份文件。")
+            .title("导入 Simple Sticky Notes")
+            .buttons(tauri_plugin_dialog::MessageDialogButtons::OkCancel).blocking_show() {
+            return Ok(None);
+        }
         let Some(path) = app
             .dialog()
             .file()
-            .add_filter("haonote JSON 备份", &["json"])
+            .add_filter(if simple_sticky { "Simple Sticky Notes 数据库" } else { "haonote JSON 备份" },
+                if simple_sticky { &["db"] } else { &["json"] })
             .blocking_pick_file()
         else {
             return Ok(None);
@@ -342,6 +352,11 @@ pub async fn import_notes(app: AppHandle) -> CommandResult<Option<usize>> {
             .into_path()
             .map_err(error)
             .map_err(anyhow::Error::msg)?;
+        if simple_sticky {
+            let count = app.state::<AppState>().store.lock().unwrap().import_sticky_notes(&path)?;
+            let _ = app.emit("notes-changed", ());
+            return Ok(Some(count));
+        }
         let file = std::fs::File::open(path)?;
         if file.metadata()?.len() > 32 * 1024 * 1024 {
             anyhow::bail!("备份超过 32 MB");

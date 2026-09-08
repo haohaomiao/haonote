@@ -132,13 +132,6 @@ textarea {
   font-weight: 600;
   line-height: 1.2;
 }
-.brand small {
-  display: block;
-  font-size: 8px;
-  letter-spacing: 2.5px;
-  color: #7d8279;
-  margin-top: 5px;
-}
 .new-button {
   background: #fff;
   border: 1px solid #d8ddd2;
@@ -258,13 +251,6 @@ nav button span {
   justify-content: space-between;
   margin: 37px 0 26px;
 }
-.eyebrow {
-  font-size: 8px;
-  color: #919983;
-  letter-spacing: 1.8px;
-  font-weight: 600;
-  margin: 0 0 10px;
-}
 h1 {
   font-size: 30px;
   font-weight: 550;
@@ -288,11 +274,6 @@ h1 span {
   font-size: 12px;
   color: #96998c;
   letter-spacing: 0.3px;
-}
-.paper-mark {
-  color: #b9c2a9;
-  transform: rotate(10deg);
-  margin: 0 11px 0 0;
 }
 .toolbar {
   display: flex;
@@ -929,10 +910,6 @@ dialog::backdrop {
   font-weight: 550;
   margin: 0;
 }
-.dialog-header .eyebrow {
-  font-size: 7px;
-  margin-bottom: 8px;
-}
 .settings-scroll {
   padding: 23px 26px;
 }
@@ -1179,7 +1156,6 @@ input[type='checkbox'] {
     justify-content: center;
   }
   .brand > div,
-  .brand small,
   .nav-caption,
   .sidebar-bottom,
   .new-button,
@@ -1220,12 +1196,6 @@ input[type='checkbox'] {
   }
   h1 {
     font-size: 24px;
-  }
-  .eyebrow {
-    display: none;
-  }
-  .paper-mark {
-    display: none;
   }
   .search {
     width: 100%;

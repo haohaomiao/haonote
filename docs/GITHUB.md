@@ -20,11 +20,11 @@ git push -u origin main
 推送 main 后，Actions 检查并构建 Linux / Windows 安装包。确认代码后创建版本标签：
 
 ```sh
-git tag -a v0.1.1 -m "haonote 0.1.1"
-git push origin v0.1.1
+git tag -a v0.1.2 -m "haonote 0.1.2"
+git push origin v0.1.2
 ```
 
-两个平台检查通过后，工作流创建预发布草稿，附带安装包、SHA256SUMS 和版本说明。到 Releases 页面检查，完成必要测试，再点击发布。仓库需允许 Actions 运行及发布作业请求的 contents: write 权限。
+两个平台检查通过后，工作流先创建草稿并上传安装包、SHA256SUMS 和版本说明，附件上传完成后自动公开为预发布版。推送版本标签即表示要公开发布，测试时只推分支，不要推版本标签。仓库需允许 Actions 运行及发布作业请求的 contents: write 权限。已发布标签不覆盖，修复后使用新版本号。
 
 也可手动创建 Release，选择对应源码标签，粘贴 `docs/releases/v0.1.1.md`，上传 `artifacts/releases/0.1.1/` 中三个安装包及 SHA256SUMS。不要同时手动创建同一版本和触发自动草稿，以免冲突。
 

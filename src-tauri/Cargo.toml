@@ -1,6 +1,6 @@
 [package]
 name = "qingnote"
-version = "0.1.1"
+version = "0.1.2"
 description = "A small, offline-first sticky notes app with WebDAV sync"
 authors = ["QingNote contributors"]
 edition = "2021"

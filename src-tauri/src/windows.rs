@@ -202,6 +202,8 @@ fn open_note_window(app: &AppHandle, note_id: &str) -> anyhow::Result<()> {
         WebviewUrl::App(format!("index.html?note={note_id}").into()),
     )
     .title("haonote")
+    .disable_drag_drop_handler()
+    .enable_clipboard_access()
     .decorations(false)
     .transparent(true)
     .inner_size(

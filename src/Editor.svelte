@@ -129,6 +129,60 @@
     if (view.markdown) richEditor?.captureSelection();
     else if (editor) sourceSelection = { start: editor.selectionStart, end: editor.selectionEnd };
   }
+  async function clipboard(action: 'cut' | 'copy' | 'paste') {
+    if (!note || composing) return;
+    const editable =
+      !note.content.deleted && !note.content.archived && (!view.markdown || richEditor?.canEdit());
+    if (action !== 'copy' && !editable) return;
+    textMenu = null;
+    if (view.markdown) richEditor?.restoreSelection();
+    else if (editor) {
+      editor.focus();
+      if (sourceSelection) editor.setSelectionRange(sourceSelection.start, sourceSelection.end);
+    }
+    try {
+      // Native editing commands preserve rich content and the normal undo history.
+      if (document.execCommand(action)) return;
+      if (action !== 'paste') throw new Error('无法访问剪贴板，请使用系统快捷键。');
+      const before = text;
+      const markdown = view.markdown;
+      const targetNote = noteId;
+      let plain = '',
+        html = '';
+      if (navigator.clipboard.read) {
+        const items = await navigator.clipboard.read();
+        for (const item of items) {
+          if (item.types.includes('text/plain'))
+            plain = await (await item.getType('text/plain')).text();
+          if (item.types.includes('text/html'))
+            html = await (await item.getType('text/html')).text();
+          if (plain || html) break;
+        }
+      } else plain = await navigator.clipboard.readText();
+      // Do not overwrite an edit made while a clipboard permission prompt was open.
+      if (
+        text !== before ||
+        view.markdown !== markdown ||
+        noteId !== targetNote ||
+        closing ||
+        note.content.deleted ||
+        note.content.archived
+      )
+        return;
+      if (view.markdown) richEditor?.paste(plain, html);
+      else if (editor && plain) {
+        editor.focus();
+        if (sourceSelection) editor.setSelectionRange(sourceSelection.start, sourceSelection.end);
+        if (!document.execCommand('insertText', false, plain)) {
+          editor.setRangeText(plain, editor.selectionStart, editor.selectionEnd, 'end');
+          text = editor.value;
+          changed();
+        }
+      }
+    } catch (error) {
+      failure = `剪贴板操作失败，请尝试 Ctrl/Cmd+C、X、V：${String(error)}`;
+    }
+  }
   async function showTextMenu(event: MouseEvent) {
     event.preventDefault();
     captureTextSelection();
@@ -136,7 +190,7 @@
     if (!native || !standalone) {
       textMenu = {
         x: Math.max(0, Math.min(event.clientX, innerWidth - 260)),
-        y: Math.max(0, Math.min(event.clientY, innerHeight - 65)),
+        y: Math.max(0, Math.min(event.clientY, innerHeight - 110)),
       };
       return;
     }
@@ -149,6 +203,15 @@
         (!view.markdown || richEditor?.canEdit());
       contextMenu = await Menu.new({
         items: [
+          ...(['cut', 'copy', 'paste'] as const).map((action, i) => ({
+            id: `${noteId}:clipboard-${action}`,
+            text: ['剪切    Ctrl+X', '复制    Ctrl+C', '粘贴    Ctrl+V'][i],
+            enabled: action === 'copy' || !!editable,
+            action: () => {
+              void clipboard(action);
+            },
+          })),
+          { item: 'Separator' },
           ...(['bold', 'italic', 'underline'] as const).map((kind, i) => ({
             id: `${noteId}:format-${kind}`,
             text: ['加粗', '斜体', '下划线'][i],
@@ -802,6 +865,21 @@
     role="dialog"
     aria-label="选区格式"
   >
+    <div class="text-toolbar" role="toolbar" aria-label="剪贴板">
+      {#each ['cut', 'copy', 'paste'] as const as action, i}
+        <button
+          onpointerdown={(e) => e.preventDefault()}
+          onclick={() => clipboard(action)}
+          disabled={action !== 'copy' &&
+            (!note ||
+              note.content.deleted ||
+              note.content.archived ||
+              (view.markdown && !richEditor?.canEdit()))}
+          title={['Ctrl/Cmd+X', 'Ctrl/Cmd+C', 'Ctrl/Cmd+V'][i]}
+          >{['剪切', '复制', '粘贴'][i]}</button
+        >
+      {/each}
+    </div>
     <TextTools
       {view}
       busy={viewBusy}
