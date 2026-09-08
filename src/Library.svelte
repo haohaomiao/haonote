@@ -269,7 +269,7 @@
       {#if native}<button class="sidebar-settings subtle" onclick={quit}
           ><LogOut size={16} />退出haonote</button
         >{/if}
-      <span class="version">haonote · 0.1.2</span>
+      <span class="version">haonote · 0.1.3</span>
     </div>
   </aside>
 

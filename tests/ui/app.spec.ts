@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import type { Editor } from '@tiptap/core';
 
 test('clipboard menu and system shortcuts preserve rich text and undo', async ({
   page,
@@ -40,11 +41,13 @@ test('dragging a rich selection moves it once and can be undone', async ({ page 
   await page.getByRole('button', { name: '写下第一张便签' }).click();
   const rich = page.getByRole('textbox', { name: '排版正文' });
   await rich.fill('ABC def');
-  await rich.press('Home');
-  for (let i = 0; i < 3; i++) await rich.press('Shift+ArrowRight');
-  // Let the browser selectionchange reach ProseMirror before synthetic drag events.
-  await page.waitForTimeout(100);
   await rich.evaluate((el) => {
+    // This test targets drag/drop, not asynchronous browser selectionchange.
+    // Set its starting selection synchronously through the real editor, then
+    // send drag events through the normal DOM handlers. Keyboard selection is
+    // covered separately by the clipboard and formatting tests.
+    const editor = (el as HTMLElement & { editor: Editor }).editor;
+    editor.commands.setTextSelection({ from: 1, to: 4 });
     const text = el.querySelector('p')!.firstChild!;
     const from = document.createRange();
     from.setStart(text, 1);
