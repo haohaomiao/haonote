@@ -1,0 +1,10 @@
+# Keep source checkouts identical on Windows and Linux (Prettier expects LF).
+* text=auto eol=lf
+
+*.png binary
+*.ico binary
+*.icns binary
+*.zip binary
+*.exe binary
+*.deb binary
+*.AppImage binary
