@@ -1,0 +1,70 @@
+name: Publish verified existing installers
+
+# Recovery path: publish already-tested installers without rebuilding or moving tags.
+# The initial push handles v0.1.3; subsequent recoveries can use Run workflow.
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/publish-existing.yml']
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Build run containing two successful desktop jobs
+        required: true
+        default: '34238384157'
+      tag:
+        description: Existing release tag matching that build
+        required: true
+        default: v0.1.3
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    env:
+      BUILD_RUN: ${{ inputs.run_id || '34238384157' }}
+      RELEASE_TAG: ${{ inputs.tag || 'v0.1.3' }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || 'v0.1.3' }}
+          persist-credentials: false
+      - name: Verify source tag and successful platform jobs
+        shell: bash
+        run: |
+          test "$RELEASE_TAG" = "v$(node -p 'require("./package.json").version')"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$BUILD_RUN" --jq .head_sha)" = "$(git rev-parse HEAD)"
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$BUILD_RUN" --jq .event)" = push
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$BUILD_RUN/jobs?per_page=100" > build-jobs.json
+          node -e 'const j=require("./build-jobs.json").jobs; for(const os of ["ubuntu-24.04","windows-latest"]) if(!j.some(x=>x.name.startsWith("desktop ("+os+",") && x.conclusion==="success")) throw Error("Missing successful build: "+os)'
+      - uses: actions/download-artifact@v7
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.run_id || '34238384157' }}
+          pattern: haonote-*
+          path: release-artifacts
+          merge-multiple: true
+      - name: Collect exact installer assets and checksums
+        shell: bash
+        run: |
+          mkdir release-assets
+          version="${RELEASE_TAG#v}"
+          for name in "haonote_${version}_amd64.deb" "haonote_${version}_amd64.AppImage" "haonote_${version}_x64-setup.exe"; do
+            mapfile -t matches < <(find release-artifacts -type f -name "$name")
+            test "${#matches[@]}" -eq 1
+            cp "${matches[0]}" release-assets/
+          done
+          cd release-assets
+          sha256sum *.deb *.AppImage *.exe > SHA256SUMS
+      - name: Publish only after attachments are uploaded
+        shell: bash
+        run: |
+          gh release create "$RELEASE_TAG" release-assets/* \
+            --verify-tag --draft --prerelease \
+            --title "haonote $RELEASE_TAG" \
+            --notes-file "docs/releases/$RELEASE_TAG.md"
+          gh release edit "$RELEASE_TAG" --draft=false

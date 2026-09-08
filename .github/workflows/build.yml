@@ -99,7 +99,7 @@ jobs:
           mkdir -p release-assets
           while IFS= read -r package; do
             cp "$package" release-assets/
-          done < <(rg --files release-artifacts -g '*.deb' -g '*.AppImage' -g '*setup.exe')
+          done < <(find release-artifacts -type f \( -name '*.deb' -o -name '*.AppImage' -o -name '*setup.exe' \))
           cd release-assets
           sha256sum *.deb *.AppImage *.exe > SHA256SUMS
       - name: Publish public prerelease
