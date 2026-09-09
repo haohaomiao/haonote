@@ -1,6 +1,6 @@
 [package]
 name = "qingnote"
-version = "0.1.4"
+version = "0.1.5"
 description = "A small, offline-first sticky notes app with WebDAV sync"
 authors = ["QingNote contributors"]
 edition = "2021"
@@ -22,12 +22,19 @@ tauri = { version = "2", features = ["tray-icon", "image-png"] }
 tauri-plugin-single-instance = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-autostart = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
+tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["time", "sync"] }
 anyhow = "1"
 uuid = { version = "1", features = ["v4"] }
 tempfile = "3"
+
+[dev-dependencies]
+base64 = "0.22"
+minisign-verify = "0.2"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 keyring = { version = "3.6", features = ["sync-secret-service", "crypto-rust", "vendored"] }

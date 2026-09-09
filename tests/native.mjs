@@ -458,6 +458,51 @@ try {
     () => visibleWindows().find((id) => !initialWindows.includes(id)),
     'second native window mapped',
   );
+  const firstXid = initialWindows.find((id) => id !== mainXid);
+  const geometry = (id) => {
+    const output = xdo('getwindowgeometry', '--shell', id);
+    return Object.fromEntries(
+      ['X', 'Y', 'WIDTH', 'HEIGHT'].map((key) => [
+        key,
+        Number(output.match(new RegExp(`^${key}=(-?\\d+)`, 'm'))[1]),
+      ]),
+    );
+  };
+  const overlaps = (a, b) =>
+    a.X < b.X + b.WIDTH && b.X < a.X + a.WIDTH && a.Y < b.Y + b.HEIGHT && b.Y < a.Y + a.HEIGHT;
+  xdo('windowmove', firstXid, '100', '100');
+  xdo('windowmove', secondXid, '100', '100');
+  await invoke('update_note_view', { patch: { collapsed: true } });
+  await until(
+    () => !overlaps(geometry(firstXid), geometry(secondXid)),
+    'collapse avoids the existing note',
+  );
+  assert.equal(geometry(secondXid).HEIGHT, 40);
+  const beforeArrange = [geometry(firstXid), geometry(secondXid)];
+  await wd('/window', 'POST', { handle: main });
+  await click('一键整理');
+  await until(
+    () =>
+      geometry(firstXid).X !== beforeArrange[0].X || geometry(firstXid).Y !== beforeArrange[0].Y,
+    'arrange moves native windows',
+  );
+  assert.ok(!overlaps(geometry(firstXid), geometry(secondXid)));
+  assert.equal(geometry(secondXid).HEIGHT, 40);
+  assert.equal(geometry(firstXid).HEIGHT, beforeArrange[0].HEIGHT);
+  await click('撤销整理');
+  await until(
+    () =>
+      JSON.stringify([geometry(firstXid), geometry(secondXid)]) === JSON.stringify(beforeArrange),
+    'undo restores exact positions and preserves sizes',
+  );
+  await wd('/window', 'POST', { handle: companionHandle });
+  await invoke('update_note_view', { patch: { collapsed: false } });
+  await until(() => geometry(secondXid).HEIGHT > 40, 'expand before arranging both full notes');
+  await invoke('arrange_notes', { undo: false });
+  await until(
+    () => !overlaps(geometry(firstXid), geometry(secondXid)),
+    'expanded notes also arrange without overlap',
+  );
   for (const id of visibleWindows().filter((id) => id !== mainXid)) {
     assert.match(
       execFileSync('xprop', ['-id', id, '_NET_WM_STATE'], { env, encoding: 'utf8' }),
@@ -484,6 +529,30 @@ try {
   assert.ok((await wd('/window/handles')).includes(restoredEditor));
   assert.ok(visibleWindows().includes(mainXid));
   assert.equal((await invoke('list_notes')).length, 2, 'closing windows never deletes notes');
+  await assert.rejects(invoke('prepare_update', { preparing: true }), /只有 Explorer/);
+  await wd('/window', 'POST', { handle: main });
+  const support = await invoke('update_support');
+  assert.equal(support.enabled, false, 'unbundled Linux binary must not self-update');
+  await invoke('prepare_update', { preparing: true });
+  await invoke('plugin:event|emit', {
+    event: 'prepare-editors-update',
+    payload: 'native-update-test',
+  });
+  await wd('/window', 'POST', { handle: restoredEditor });
+  await until(
+    () => execute('return document.querySelector(".editor").inert'),
+    'editor frozen before install',
+  );
+  await assert.rejects(invoke('close_note'), /正在准备更新/);
+  await assert.rejects(invoke('open_note', { noteId: companion.id }), /正在准备更新/);
+  await wd('/window', 'POST', { handle: main });
+  await invoke('prepare_update', { preparing: false });
+  await invoke('plugin:event|emit', { event: 'resume-editors' });
+  await wd('/window', 'POST', { handle: restoredEditor });
+  await until(
+    () => execute('return !document.querySelector(".editor").inert'),
+    'editor resumes after canceled update',
+  );
   await execute(`setTimeout(()=>window.__TAURI_INTERNALS__.invoke('quit_app'),100);`);
   await sleep(300);
   console.log(

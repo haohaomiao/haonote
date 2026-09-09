@@ -44,9 +44,11 @@ jobs:
         run: node -e "if (process.env.GITHUB_REF_NAME !== 'v' + require('./package.json').version) throw new Error('Tag and package version must match')"
       - run: npm run format:check
       - run: npm run build
+      - run: node --test tests/release-assets.test.mjs
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
       - run: cargo test -p qingnote-core --locked
+      - run: cargo test -p qingnote --lib layout --locked
       - name: Browser UI checks
         if: runner.os == 'Linux'
         run: |
@@ -96,12 +98,7 @@ jobs:
       - name: Prepare release assets
         shell: bash
         run: |
-          mkdir -p release-assets
-          while IFS= read -r package; do
-            cp "$package" release-assets/
-          done < <(find release-artifacts -type f \( -name '*.deb' -o -name '*.AppImage' -o -name '*setup.exe' \))
-          cd release-assets
-          sha256sum *.deb *.AppImage *.exe > SHA256SUMS
+          node scripts/release-assets.mjs
       - name: Publish public prerelease
         env:
           GH_TOKEN: ${{ github.token }}

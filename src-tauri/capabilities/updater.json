@@ -1,0 +1,6 @@
+{
+  "identifier": "updater",
+  "description": "Only the local Explorer coordinates signed updates and restart.",
+  "windows": ["main"],
+  "permissions": ["updater:default", "process:allow-restart"]
+}

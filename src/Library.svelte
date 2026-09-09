@@ -24,6 +24,8 @@
   import Editor from './Editor.svelte';
   import SettingsDialog from './SettingsDialog.svelte';
   import ConflictDialog from './ConflictDialog.svelte';
+  import UpdatePanel from './UpdatePanel.svelte';
+  import { flushEditors } from './flush-editors';
   import {
     loadLibraryView,
     saveLibraryView,
@@ -66,6 +68,7 @@
   let notice = $state('');
   let busy = $state(false);
   let quitting = false;
+  let installing = $state(false);
   let searchInput: HTMLInputElement;
   const labels: Record<Filter, string> = {
     active: '我的便签',
@@ -124,6 +127,11 @@
       await open(note);
     });
   }
+  async function arrange(undo = false) {
+    await task(async () => {
+      notice = await call<string>('arrange_notes', { undo });
+    });
+  }
   async function change(note: Note, action: 'archive' | 'delete' | 'restore') {
     await task(async () => {
       const content = { ...note.content };
@@ -162,47 +170,37 @@
     });
   }
   async function quit() {
-    if (quitting) return;
+    if (quitting || installing) return;
     quitting = true;
     try {
-      const ids = new Set(await call<string[]>('editor_ids'));
-      if (ids.size) {
-        const token = crypto.randomUUID();
-        await new Promise<void>((resolve, reject) => {
-          let off = () => {};
-          const timeout = setTimeout(() => {
-            off();
-            reject(new Error('便签窗口未能确认保存，请检查后再退出'));
-          }, 8000);
-          void on('editor-flushed', (payload) => {
-            const ack = payload as { token: string; noteId: string; ok: boolean };
-            if (ack.token !== token) return;
-            if (!ack.ok) {
-              clearTimeout(timeout);
-              off();
-              reject(new Error('有便签尚未保存，请处理保存错误后退出'));
-              return;
-            }
-            ids.delete(ack.noteId);
-            if (!ids.size) {
-              clearTimeout(timeout);
-              off();
-              resolve();
-            }
-          })
-            .then((unlisten) => {
-              off = unlisten;
-              return broadcast('flush-editors', token);
-            })
-            .catch(reject);
-        });
-      }
+      await flushEditors();
       await call('quit_app');
     } catch (e) {
       notice = String(e);
       if (native) await call('open_library');
     } finally {
       quitting = false;
+    }
+  }
+  async function installUpdate(install: () => Promise<void>) {
+    if (quitting || installing || busy || settingsOpen || conflict) {
+      throw new Error('请先完成当前操作并关闭设置或冲突窗口');
+    }
+    installing = true;
+    try {
+      await call('prepare_update', { preparing: true });
+      await flushEditors(true);
+      await install();
+    } finally {
+      try {
+        await call('prepare_update', { preparing: false });
+      } finally {
+        try {
+          await broadcast('resume-editors');
+        } finally {
+          installing = false;
+        }
+      }
     }
   }
   onMount(() => {
@@ -220,6 +218,9 @@
     void on('request-quit', () => {
       void quit();
     }).then((f) => (disposed ? f() : off.push(f)));
+    void on('layout-notice', (message) => {
+      notice = String(message);
+    }).then((f) => (disposed ? f() : off.push(f)));
     return () => {
       clearInterval(clock);
       disposed = true;
@@ -230,7 +231,7 @@
 
 <svelte:window
   onkeydown={(event) => {
-    if (settingsOpen || previewNote || conflict) return;
+    if (installing || settingsOpen || previewNote || conflict) return;
     if ((event.ctrlKey || event.metaKey) && event.key === 'n') {
       event.preventDefault();
       void create();
@@ -246,7 +247,7 @@
   }}
 />
 
-<div class="library-shell">
+<div class="library-shell" inert={installing}>
   <aside class="sidebar">
     <div class="brand">
       <span class="brand-icon"><StickyNote size={23} strokeWidth={1.6} /></span>
@@ -294,7 +295,8 @@
       {#if native}<button class="sidebar-settings subtle" onclick={quit}
           ><LogOut size={16} />退出haonote</button
         >{/if}
-      <span class="version">haonote · 0.1.4</span>
+      <UpdatePanel oninstall={installUpdate} />
+      <span class="version">haonote · 0.1.5</span>
     </div>
   </aside>
 
@@ -319,6 +321,15 @@
       </div>
     </header>
     <div class="toolbar">
+      {#if native}
+        <button
+          class="secondary"
+          onclick={() => arrange()}
+          disabled={busy}
+          title="按屏幕整理所有可见便签，保留大小和折叠状态">一键整理</button
+        >
+        <button class="text-button" onclick={() => arrange(true)} disabled={busy}>撤销整理</button>
+      {/if}
       <label class="search"
         ><Search size={17} /><input
           bind:this={searchInput!}

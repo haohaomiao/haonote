@@ -1,4 +1,6 @@
 mod commands;
+mod layout;
+mod updates;
 mod windows;
 
 use qingnote_core::{sync::SharedStore, Store, SyncStatus};
@@ -19,7 +21,10 @@ pub fn run() {
         }))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_autostart::Builder::new().build())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .setup(|app| {
+            app.manage(layout::LayoutState::default());
             let directory = app.path().app_data_dir()?;
             std::fs::create_dir_all(&directory)?;
             #[cfg(unix)]
@@ -93,7 +98,11 @@ pub fn run() {
             windows::get_pinned,
             windows::get_note_view,
             windows::update_note_view,
-            windows::editor_ids
+            windows::editor_ids,
+            layout::arrange_notes,
+            updates::update_support,
+            updates::open_releases,
+            updates::prepare_update
         ])
         .build(tauri::generate_context!())
         .expect("无法启动haonote")

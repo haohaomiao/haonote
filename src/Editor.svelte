@@ -53,6 +53,7 @@
   let textMenu = $state<{ x: number; y: number } | null>(null);
   let sourceSelection: { start: number; end: number } | undefined;
   let closing = false;
+  let updating = $state(false);
   let view = $state<NoteView>({
     collapsed: false,
     opacity: 100,
@@ -84,6 +85,7 @@
   }
 
   function formatText(kind: 'bold' | 'italic' | 'underline') {
+    if (updating) return;
     if (view.markdown) {
       richEditor?.format(kind);
       textMenu = null;
@@ -130,7 +132,7 @@
     else if (editor) sourceSelection = { start: editor.selectionStart, end: editor.selectionEnd };
   }
   async function clipboard(action: 'cut' | 'copy' | 'paste') {
-    if (!note || composing) return;
+    if (!note || composing || updating) return;
     const editable =
       !note.content.deleted && !note.content.archived && (!view.markdown || richEditor?.canEdit());
     if (action !== 'copy' && !editable) return;
@@ -164,6 +166,7 @@
         text !== before ||
         view.markdown !== markdown ||
         noteId !== targetNote ||
+        updating ||
         closing ||
         note.content.deleted ||
         note.content.archived
@@ -185,6 +188,7 @@
   }
   async function showTextMenu(event: MouseEvent) {
     event.preventDefault();
+    if (updating) return;
     captureTextSelection();
     menu = false;
     if (!native || !standalone) {
@@ -285,7 +289,7 @@
   }
   async function showContextMenu(event: MouseEvent) {
     event.preventDefault();
-    if (!note || viewBusy) return;
+    if (!note || viewBusy || updating) return;
     try {
       if (!native || !standalone) {
         await toggleMenu(true);
@@ -295,7 +299,9 @@
       const item = (id: string, text: string, action: () => void) => ({
         id: `${noteId}:${id}`,
         text,
-        action,
+        action: () => {
+          if (!updating) action();
+        },
       });
       contextMenu = await Menu.new({
         items: [
@@ -446,7 +452,7 @@
     }
   }
   async function close() {
-    if (closing) return;
+    if (closing || updating) return;
     closing = true;
     try {
       await flush();
@@ -514,6 +520,32 @@
         opacity = view.opacity;
         const listeners: [string, (payload: unknown) => void][] = [
           [
+            'resume-editors',
+            () => {
+              updating = false;
+            },
+          ],
+          [
+            'prepare-editors-update',
+            (token) => {
+              void (async () => {
+                try {
+                  if (composing) throw new Error('请先完成输入法输入');
+                  updating = true;
+                  menu = false;
+                  textMenu = null;
+                  await contextMenu?.close();
+                  await tick();
+                  await flush();
+                  await broadcast('editor-flushed', { token, noteId, ok: true });
+                } catch {
+                  updating = false;
+                  await broadcast('editor-flushed', { token, noteId, ok: false });
+                }
+              })();
+            },
+          ],
+          [
             'notes-changed',
             () => {
               void refresh().catch((e) => (failure = String(e)));
@@ -568,6 +600,7 @@
       menu = false;
   }}
   onkeydown={(event) => {
+    if (updating) return;
     if (event.key === 'F2') {
       event.preventDefault();
       void editTitle().catch((e) => (failure = String(e)));
@@ -599,6 +632,7 @@
 />
 
 <section
+  inert={updating}
   class:standalone
   class:collapsed={view.collapsed}
   class="editor note-{color}"
@@ -792,7 +826,7 @@
         <RichEditor
           bind:this={richEditor}
           source={text}
-          disabled={!note || note.content.deleted || note.content.archived}
+          disabled={updating || !note || note.content.deleted || note.content.archived}
           onchange={(value) => {
             text = value;
             changed();

@@ -157,6 +157,12 @@ pub async fn update_note_view(
             return Err(error.to_string());
         }
     }
+    if patch.collapsed == Some(true) && !previous.view.collapsed {
+        if let Err(error) = crate::layout::avoid_collapsed(&window, placement.width.unwrap_or(310))
+        {
+            let _ = app.emit("layout-notice", format!("已折叠，但无法自动避让：{error}"));
+        }
+    }
     Ok(placement.view)
 }
 
@@ -181,6 +187,7 @@ pub async fn open_note(app: AppHandle, note_id: String) -> Result<(), String> {
 }
 
 fn open_note_window(app: &AppHandle, note_id: &str) -> anyhow::Result<()> {
+    anyhow::ensure!(!crate::updates::preparing(), "正在准备更新，请稍候");
     uuid::Uuid::parse_str(note_id)?;
     let label = format!("note-{note_id}");
     if let Some(window) = app.get_webview_window(&label) {
@@ -250,6 +257,9 @@ fn open_note_window(app: &AppHandle, note_id: &str) -> anyhow::Result<()> {
 
 #[tauri::command]
 pub fn close_note(app: AppHandle, window: tauri::WebviewWindow) -> Result<(), String> {
+    if crate::updates::preparing() {
+        return Err("正在准备更新，请稍候".into());
+    }
     if window.label() == "main" {
         return window.hide().map_err(|e| e.to_string());
     }
@@ -294,6 +304,20 @@ pub fn editor_ids(app: AppHandle) -> Vec<String> {
         .keys()
         .filter_map(|label| label.strip_prefix("note-").map(str::to_owned))
         .collect()
+}
+
+pub(crate) fn remember_position(
+    app: &AppHandle,
+    label: &str,
+    x: i32,
+    y: i32,
+) -> anyhow::Result<()> {
+    let state = app.state::<AppState>();
+    let mut store = state.store.lock().unwrap();
+    let mut placement: Placement = store.setting(label)?.unwrap_or_default();
+    placement.x = Some(x);
+    placement.y = Some(y);
+    store.set_setting(label, &placement)
 }
 
 fn remember(app: &AppHandle, window: &Window, open: bool) -> anyhow::Result<()> {
@@ -374,11 +398,22 @@ pub fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
     let library = MenuItem::with_id(app, "library", "打开便签列表", true, None::<&str>)?;
     let toggle = MenuItem::with_id(app, "toggle", "显示 / 隐藏便签", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "退出haonote", true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&new, &library, &toggle, &quit])?;
+    let arrange = MenuItem::with_id(app, "arrange", "一键整理便签", true, None::<&str>)?;
+    let undo = MenuItem::with_id(app, "undo-arrange", "撤销整理", true, None::<&str>)?;
+    let menu = Menu::with_items(app, &[&new, &library, &toggle, &arrange, &undo, &quit])?;
     let mut tray = TrayIconBuilder::new()
         .menu(&menu)
         .tooltip("haonote")
         .on_menu_event(|app, event| match event.id.as_ref() {
+            "arrange" | "undo-arrange" => {
+                let undo = event.id.as_ref() == "undo-arrange";
+                let app = app.clone();
+                tauri::async_runtime::spawn(async move {
+                    let message =
+                        crate::layout::arrange(&app, undo).unwrap_or_else(|e| e.to_string());
+                    let _ = app.emit("layout-notice", message);
+                });
+            }
             "library" => {
                 let _ = show_main(app);
             }
@@ -423,6 +458,9 @@ pub fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
 
 #[tauri::command]
 pub fn quit_app(app: AppHandle) {
+    if crate::updates::preparing() {
+        return;
+    }
     // The main window coordinates editor acknowledgements before invoking this command.
     app.exit(0);
 }

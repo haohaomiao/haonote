@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "haonote",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "identifier": "app.qingnote.desktop",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -24,7 +24,15 @@
       "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' asset: data:; connect-src ipc: http://ipc.localhost; font-src 'self'; object-src 'none'; base-uri 'self'; frame-src 'none'"
     }
   },
+  "plugins": {
+    "updater": {
+      "pubkey": "",
+      "endpoints": ["https://github.com/haohaomiao/haonote/releases/download/update-channel/latest.json"],
+      "windows": { "installMode": "passive" }
+    }
+  },
   "bundle": {
+    "createUpdaterArtifacts": false,
     "active": true,
     "targets": ["deb", "appimage"],
     "category": "Productivity",
