@@ -277,6 +277,7 @@ h1 span {
 }
 .toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
   margin-bottom: 24px;
@@ -288,6 +289,8 @@ h1 span {
   padding: 0 12px;
   height: 37px;
   width: 260px;
+  flex: 1 1 200px;
+  min-width: 160px;
   border: 1px solid var(--line);
   border-radius: 7px;
   color: #a0a596;
@@ -306,10 +309,35 @@ h1 span {
 .search:focus-within {
   border-color: #94a883;
 }
-.sort-label {
-  margin-left: auto;
-  color: #999e90;
-  font-size: 11px;
+.toolbar select {
+  height: 37px;
+  max-width: 100%;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #ffffff66;
+  color: #555f50;
+  font-size: 12px;
+}
+.view-switch {
+  display: flex;
+  gap: 3px;
+}
+.view-switch [aria-pressed='true'] {
+  background: #dde3d4;
+  color: #3e5536;
+}
+.filter-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: -12px 0 18px;
+  font-size: 12px;
+  color: #69765c;
+}
+.filter-summary button {
+  text-decoration: underline;
 }
 .note-grid {
   display: grid;
@@ -344,6 +372,52 @@ h1 span {
 .note-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px #4648230b;
+}
+.note-grid.note-list {
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+.note-list .note-card {
+  height: auto;
+  min-height: 76px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  border-radius: 6px;
+}
+.note-list .note-card::after {
+  display: none;
+}
+.note-list .note-card:hover {
+  transform: none;
+}
+.note-list .card-content {
+  padding: 12px 16px;
+}
+.note-list .card-content h2 {
+  margin-bottom: 3px;
+}
+.note-list .card-content p {
+  -webkit-line-clamp: 1;
+}
+.note-list .note-card footer {
+  margin: 8px 12px;
+  gap: 12px;
+}
+.note-list .note-card .card-actions button {
+  opacity: 1;
+}
+.note-list .conflict-badge {
+  position: static;
+  margin: 0 16px 8px;
+  grid-column: 1;
+  justify-self: start;
+}
+.note-list .add-card {
+  min-height: 48px;
+  height: 48px;
+  flex-direction: row;
+  gap: 8px;
 }
 .card-content {
   padding: 22px 21px 6px;
@@ -1200,8 +1274,11 @@ input[type='checkbox'] {
   .search {
     width: 100%;
   }
-  .sort-label {
-    display: none;
+  .note-list .note-card {
+    grid-template-columns: 1fr;
+  }
+  .note-list .note-card footer {
+    margin-top: 0;
   }
   .note-grid {
     grid-template-columns: 1fr;

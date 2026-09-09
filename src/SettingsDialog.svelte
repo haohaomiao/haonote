@@ -208,7 +208,7 @@
     </div>
     <div class="data-location"><span>本地资料库</span><code>{dataDirectory}</code></div>
     <p class="small-note">
-      haonote 0.1.3 · 自动同步约每 2 分钟一次。关闭便签仅收起窗口，回收站不会自动清空。
+      haonote 0.1.4 · 自动同步约每 2 分钟一次。关闭便签仅收起窗口，回收站不会自动清空。
     </p>
   </div>
 </dialog>

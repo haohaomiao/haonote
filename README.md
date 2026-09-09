@@ -4,7 +4,7 @@
 
 一个以 Windows、Linux 为目标的简洁桌面便签。打开就写，本地自动保存，通过自己的坚果云或 WebDAV 账号同步。
 
-当前为 **0.1.3 预发布版**。安装包见 [GitHub Releases](https://github.com/haohaomiao/haonote/releases)，更新内容见 [0.1.3 版本说明](docs/releases/v0.1.3.md)。Windows 安装包尚未实机验证；手机安装包尚未实现。
+当前为 **0.1.4 预发布版**。安装包见 [GitHub Releases](https://github.com/haohaomiao/haonote/releases)，更新内容见 [0.1.4 版本说明](docs/releases/v0.1.4.md)。Windows 安装包尚未实机验证；手机安装包尚未实现。
 
 ## 使用
 
@@ -21,6 +21,7 @@
 - 大小、折叠、透明度、预览模式按便签保存在本机，重启后恢复，不影响其他设备的布局。Markdown 源码仍作为正文同步。
 - 收起窗口不删除内容；从列表可以再次打开。
 - 归档、回收站、搜索、JSON 完整备份和 TXT 导出。
+- 列表窗口支持卡片／紧凑列表切换；按创建或修改时间升序／降序排序，支持今天、近 7 天、近 30 天筛选（包含今天，以本机日历日期为界，跟随所选排序时间字段）。搜索同时匹配标题和正文，不区分大小写，空格分隔的关键词需要全部匹配；可与分类及时间筛选组合。Ctrl/Cmd+F 定位搜索框，一键清除搜索和筛选。浏览方式、排序和时间范围保存在本机，不参与同步；搜索词不持久保存。
 - 不连接云服务也能正常使用。
 - 正常退出使用列表左下角或托盘的「退出haonote」。程序会等待各便签完成本地保存。
 - `Ctrl/Cmd + N` 新建、`Ctrl/Cmd + F` 搜索（列表窗口）；`Ctrl/Cmd + S` 立即保存、`Esc` 收起（便签窗口）。
@@ -29,7 +30,7 @@
 
 排版编辑使用 [Tiptap Markdown](https://tiptap.dev/docs/editor/markdown/getting-started/basic-usage)，只读预览经过 [DOMPurify](https://github.com/cure53/DOMPurify) 过滤。所有依赖本地打包，没有新增联网编辑服务。
 
-升级沿用原正式版资料库与同步配置，安装前请导出 JSON 备份并正常退出旧版。安装说明见 [版本说明](docs/releases/v0.1.3.md)，上传源码见 [GitHub 发布指南](docs/GITHUB.md)。
+升级沿用原正式版资料库与同步配置，安装前请导出 JSON 备份并正常退出旧版。安装说明见 [版本说明](docs/releases/v0.1.4.md)，上传源码见 [GitHub 发布指南](docs/GITHUB.md)。
 
 ### 配置坚果云
 

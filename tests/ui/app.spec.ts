@@ -1,6 +1,77 @@
 import { test, expect } from '@playwright/test';
 import type { Editor } from '@tiptap/core';
 
+test('library views combine time sorting, filters and title/body search', async ({ page }) => {
+  const now = Date.parse('2026-09-08T12:00:00Z');
+  await page.clock.setFixedTime(now);
+  const seed = [
+    { id: 'a', title: 'Alpha 计划', text: '预算 苹果', created: 60, updated: 0 },
+    { id: 'b', title: '新便签', text: '会议 banana', created: 1, updated: 1 },
+    { id: 'c', title: '中间便签', text: 'Alpha 梨', created: 10, updated: 5 },
+    { id: 'd', title: '归档便签', text: '苹果', created: 0, updated: 0, archived: true },
+  ].map((item) => ({
+    id: item.id,
+    headId: item.id,
+    pending: true,
+    conflicts: [],
+    createdAt: new Date(now - item.created * 86400000).toISOString(),
+    updatedAt: new Date(now - item.updated * 86400000).toISOString(),
+    content: {
+      title: item.title,
+      text: item.text,
+      color: 'butter',
+      archived: !!item.archived,
+      deleted: false,
+    },
+  }));
+  await page.addInitScript(
+    (notes) => localStorage.setItem('qingnote-development-preview', JSON.stringify(notes)),
+    seed,
+  );
+  await page.goto('/');
+  const titles = page.locator('.note-card h2');
+  await expect(titles).toHaveText(['Alpha 计划', '新便签', '中间便签']);
+  await page.getByRole('button', { name: '列表视图', exact: true }).click();
+  await expect(page.locator('.note-list')).toBeVisible();
+  await page.getByLabel('时间排序').selectOption('created-asc');
+  await expect(titles).toHaveText(['Alpha 计划', '中间便签', '新便签']);
+  await page.getByLabel('时间排序').selectOption('created-desc');
+  await expect(titles).toHaveText(['新便签', '中间便签', 'Alpha 计划']);
+  await page.getByLabel('时间筛选').selectOption('week');
+  await expect(titles).toHaveText(['新便签']);
+  await page.reload();
+  await expect(page.getByRole('button', { name: '列表视图', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(page.getByLabel('时间排序')).toHaveValue('created-desc');
+  await expect(page.getByLabel('时间筛选')).toHaveValue('week');
+  await expect(titles).toHaveText(['新便签']);
+  await page.getByLabel('时间排序').selectOption('updated-desc');
+  await page.getByLabel('时间筛选').selectOption('today');
+  await expect(titles).toHaveText(['Alpha 计划']);
+  await page.keyboard.press('Control+f');
+  const search = page.getByRole('textbox', { name: '搜索便签' });
+  await expect(search).toBeFocused();
+  await search.fill('  ALPHA 苹果  ');
+  await expect(titles).toHaveText(['Alpha 计划']);
+  await search.fill('banana');
+  await expect(titles).toHaveCount(0);
+  await expect(page.getByText('没有找到这张便签', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '写下第一张便签' })).toHaveCount(0);
+  await page.getByRole('button', { name: '清除搜索和筛选' }).click();
+  await expect(titles).toHaveCount(3);
+  await search.fill('苹果');
+  await page.locator('nav button').filter({ hasText: '归档' }).click();
+  await expect(titles).toHaveText(['归档便签']);
+  await page.getByRole('button', { name: '清除搜索和筛选' }).click();
+  await page.locator('nav button').filter({ hasText: '我的便签' }).click();
+  await page.screenshot({ path: 'artifacts/list-view.png' });
+  await page.getByRole('button', { name: '卡片视图', exact: true }).click();
+  await expect(page.locator('.note-list')).toHaveCount(0);
+  await expect(titles).toHaveCount(3);
+});
+
 test('clipboard menu and system shortcuts preserve rich text and undo', async ({
   page,
   context,

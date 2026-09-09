@@ -520,12 +520,6 @@
             },
           ],
           [
-            'request-close',
-            () => {
-              void close();
-            },
-          ],
-          [
             'flush-editors',
             (token) => {
               void flush()
@@ -536,6 +530,14 @@
         ];
         for (const [event, handler] of listeners) {
           const unlisten = await on(event, handler);
+          if (disposed) unlisten();
+          else off.push(unlisten);
+        }
+        if (native && standalone) {
+          const window = getCurrentWindow();
+          const unlisten = await window.listen<string>('request-close', ({ payload }) => {
+            if (payload === window.label) void close();
+          });
           if (disposed) unlisten();
           else off.push(unlisten);
         }

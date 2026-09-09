@@ -45,7 +45,7 @@ impl Dav {
             .connect_timeout(Duration::from_secs(10))
             .timeout(Duration::from_secs(30))
             .redirect(reqwest::redirect::Policy::none())
-            .user_agent("haonote/0.1.3")
+            .user_agent("haonote/0.1.4")
             .build()?;
         let root = base.join("v1/")?;
         Ok(Self {

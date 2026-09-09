@@ -223,7 +223,7 @@ fn open_note_window(app: &AppHandle, note_id: &str) -> anyhow::Result<()> {
         },
     )
     .always_on_top(placement.pinned)
-    .skip_taskbar(false);
+    .skip_taskbar(true);
     let window = builder.build()?;
     if placement.view.collapsed {
         window.set_max_size(Some(tauri::LogicalSize::new(1600, TITLE_HEIGHT)))?;
@@ -354,8 +354,13 @@ pub fn restore_notes(app: &AppHandle) -> anyhow::Result<()> {
 pub fn handle_event(window: &Window, event: &WindowEvent) {
     if let WindowEvent::CloseRequested { api, .. } = event {
         api.prevent_close();
-        // The editor flushes its local save before acknowledging the close.
-        let _ = window.emit_to(window.label(), "request-close", ());
+        if window.label() == "main" {
+            // Closing Explorer hides only Explorer. Notes and the tray stay alive.
+            let _ = window.hide();
+        } else if window.label().starts_with("note-") {
+            // Only this editor may flush and acknowledge its close request.
+            let _ = window.emit_to(window.label(), "request-close", window.label());
+        }
     }
     if matches!(event, WindowEvent::Moved(_) | WindowEvent::Resized(_))
         && window.label().starts_with("note-")

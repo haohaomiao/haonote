@@ -422,6 +422,68 @@ try {
     async () => (await invoke('get_note_view')).fontFamily === 'mono',
     'font restored after restart',
   );
+  // Exercise real OS close requests with multiple editors, not just our close button.
+  const xdo = (...args) =>
+    execFileSync(process.env.XDOTOOL_PATH || 'xdotool', args, { env, encoding: 'utf8' });
+  const visibleWindows = () =>
+    xdo('search', '--onlyvisible', '--name', '^haonote$').trim().split('\n');
+  const initialWindows = visibleWindows();
+  const mainXid = initialWindows.find((id) => {
+    const width = xdo('getwindowgeometry', '--shell', id).match(/WIDTH=(\d+)/);
+    return Number(width?.[1]) >= 760;
+  });
+  assert.ok(mainXid, 'Explorer has a native window');
+  const companion = await invoke('save_note', {
+    noteId: null,
+    expected: null,
+    content: {
+      title: '第二张',
+      text: '保持打开',
+      color: 'butter',
+      archived: false,
+      deleted: false,
+    },
+  });
+  await invoke('open_note', { noteId: companion.id });
+  await until(async () => (await wd('/window/handles')).length === 3, 'two native editors');
+  const companionHandle = (await wd('/window/handles')).find(
+    (handle) => handle !== main && handle !== restoredEditor,
+  );
+  await wd('/window', 'POST', { handle: companionHandle });
+  await until(
+    () => execute('return !!document.querySelector(".tiptap")'),
+    'companion editor initialized',
+  );
+  const secondXid = await until(
+    () => visibleWindows().find((id) => !initialWindows.includes(id)),
+    'second native window mapped',
+  );
+  for (const id of visibleWindows().filter((id) => id !== mainXid)) {
+    assert.match(
+      execFileSync('xprop', ['-id', id, '_NET_WM_STATE'], { env, encoding: 'utf8' }),
+      /_NET_WM_STATE_SKIP_TASKBAR/,
+    );
+  }
+  const closeNative = (id) => {
+    xdo('windowactivate', '--sync', id);
+    xdo('key', '--clearmodifiers', 'alt+F4');
+  };
+  closeNative(mainXid);
+  await until(() => !visibleWindows().includes(mainXid), 'Explorer hides on OS close');
+  assert.equal((await wd('/window/handles')).length, 3, 'closing Explorer keeps both editors');
+  assert.equal(visibleWindows().length, 2);
+  await invoke('open_library');
+  await until(() => visibleWindows().includes(mainXid), 'Explorer reopens');
+  closeNative(secondXid);
+  await sleep(300);
+  await wd('/window', 'POST', { handle: restoredEditor });
+  await until(
+    async () => (await wd('/window/handles')).length === 2,
+    'only the closed editor is removed',
+  );
+  assert.ok((await wd('/window/handles')).includes(restoredEditor));
+  assert.ok(visibleWindows().includes(mainXid));
+  assert.equal((await invoke('list_notes')).length, 2, 'closing windows never deletes notes');
   await execute(`setTimeout(()=>window.__TAURI_INTERNALS__.invoke('quit_app'),100);`);
   await sleep(300);
   console.log(

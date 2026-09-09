@@ -16,17 +16,44 @@
     Download,
     Upload,
     X,
+    List,
+    LayoutGrid,
   } from '@lucide/svelte';
   import { broadcast, call, listNotes, native, on, saveNote, syncStatus } from './api';
   import { emptyContent, shortDate, title, type Note, type SyncStatus } from './types';
   import Editor from './Editor.svelte';
   import SettingsDialog from './SettingsDialog.svelte';
   import ConflictDialog from './ConflictDialog.svelte';
+  import {
+    loadLibraryView,
+    saveLibraryView,
+    selectNotes,
+    noteTime,
+    sortOptions,
+    periodOptions,
+    type LibraryView,
+  } from './library-view';
 
   type Filter = 'active' | 'archived' | 'deleted' | 'conflicts';
   let notes = $state<Note[]>([]);
   let filter = $state<Filter>('active');
   let query = $state('');
+  let view = $state(loadLibraryView());
+  let now = $state(Date.now());
+  const hasFilters = $derived(!!query.trim() || view.period !== 'all');
+  function changeView(patch: Partial<LibraryView>) {
+    view = { ...view, ...patch };
+    now = Date.now();
+    try {
+      saveLibraryView(view);
+    } catch {
+      notice = '查看偏好未能保存，当前操作仍然有效。';
+    }
+  }
+  function clearFilters() {
+    query = '';
+    changeView({ period: 'all' });
+  }
   let settingsOpen = $state(false);
   let previewNote = $state<string | null>(null);
   let conflict = $state<Note | null>(null);
@@ -60,17 +87,13 @@
         : f === 'archived'
           ? n.content.archived && !n.content.deleted
           : !n.content.archived && !n.content.deleted;
-  let visible = $derived(
-    notes.filter(
-      (n) =>
-        belongs(n, filter) &&
-        `${title(n)}\n${n.content.text}`.toLocaleLowerCase().includes(query.toLocaleLowerCase()),
-    ),
-  );
+  const categoryNotes = $derived(notes.filter((n) => belongs(n, filter)));
+  const visible = $derived(selectNotes(categoryNotes, query, view, now));
   let count = $derived(notes.filter((n) => belongs(n, 'active')).length);
   let conflictCount = $derived(notes.filter((n) => n.conflicts.length).length);
 
   async function refresh() {
+    now = Date.now();
     notes = await listNotes();
     status = await syncStatus();
   }
@@ -183,6 +206,9 @@
     }
   }
   onMount(() => {
+    const clock = setInterval(() => {
+      now = Date.now();
+    }, 60_000);
     let disposed = false;
     const off: (() => void)[] = [];
     void refresh().catch((e) => (notice = String(e)));
@@ -191,13 +217,11 @@
         void refresh().catch((e) => (notice = String(e)));
       }).then((f) => (disposed ? f() : off.push(f)));
     }
-    void on('request-close', () => {
-      void call('close_note').catch((e) => (notice = String(e)));
-    }).then((f) => (disposed ? f() : off.push(f)));
     void on('request-quit', () => {
       void quit();
     }).then((f) => (disposed ? f() : off.push(f)));
     return () => {
+      clearInterval(clock);
       disposed = true;
       off.forEach((f) => f());
     };
@@ -217,6 +241,7 @@
     }
   }}
   onfocus={() => {
+    now = Date.now();
     if (native) void sync();
   }}
 />
@@ -269,7 +294,7 @@
       {#if native}<button class="sidebar-settings subtle" onclick={quit}
           ><LogOut size={16} />退出haonote</button
         >{/if}
-      <span class="version">haonote · 0.1.3</span>
+      <span class="version">haonote · 0.1.4</span>
     </div>
   </aside>
 
@@ -298,13 +323,53 @@
         ><Search size={17} /><input
           bind:this={searchInput!}
           bind:value={query}
-          placeholder="搜索便签…"
+          placeholder="搜索标题或正文…"
           aria-label="搜索便签"
         />{#if query}<button class="icon-button" aria-label="清空搜索" onclick={() => (query = '')}
             ><X size={14} /></button
           >{/if}</label
-      ><span class="sort-label">最近修改</span>
+      >
+      <select
+        aria-label="时间排序"
+        value={view.sort}
+        onchange={(e) => changeView({ sort: e.currentTarget.value as LibraryView['sort'] })}
+      >
+        {#each Object.entries(sortOptions) as [value, label]}<option {value}>{label}</option>{/each}
+      </select>
+      <select
+        aria-label="时间筛选"
+        title="按当前排序选用的创建或修改时间筛选"
+        value={view.period}
+        onchange={(e) => changeView({ period: e.currentTarget.value as LibraryView['period'] })}
+      >
+        {#each Object.entries(periodOptions) as [value, label]}<option {value}>{label}</option
+          >{/each}
+      </select>
+      <div class="view-switch" role="group" aria-label="浏览方式">
+        <button
+          class="icon-button"
+          aria-label="卡片视图"
+          title="卡片视图"
+          aria-pressed={view.layout === 'cards'}
+          onclick={() => changeView({ layout: 'cards' })}><LayoutGrid size={17} /></button
+        >
+        <button
+          class="icon-button"
+          aria-label="列表视图"
+          title="列表视图"
+          aria-pressed={view.layout === 'list'}
+          onclick={() => changeView({ layout: 'list' })}><List size={17} /></button
+        >
+      </div>
     </div>
+    {#if hasFilters}<div class="filter-summary" role="status">
+        <span
+          >显示 {visible.length} / {categoryNotes.length} 条 · 按{view.sort.startsWith('created')
+            ? '创建'
+            : '修改'}时间筛选</span
+        >
+        <button onclick={clearFilters}>清除搜索和筛选</button>
+      </div>{/if}
     {#if notice}<div class="notice" role="status">
         <span>{notice}</span><button
           class="icon-button"
@@ -313,7 +378,7 @@
         >
       </div>{/if}
     {#if visible.length}
-      <div class="note-grid">
+      <div class="note-grid" class:note-list={view.layout === 'list'}>
         {#each visible as note (note.id)}
           <article class="note-card note-{note.content.color}">
             <button
@@ -336,7 +401,8 @@
               >{/if}
             <footer>
               <span
-                >{shortDate(note.updatedAt)}<i
+                title={`${view.sort.startsWith('created') ? '创建' : '修改'}于 ${new Date(noteTime(note, view.sort)).toLocaleString()}`}
+                >{shortDate(noteTime(note, view.sort))}<i
                   title={note.pending ? '本机有待同步修改' : '已上传'}
                   class:pending={note.pending}
                 ></i></span
@@ -372,28 +438,30 @@
             </footer>
           </article>
         {/each}
-        {#if filter === 'active' && !query}<button class="add-card" onclick={create} disabled={busy}
-            ><Plus size={22} strokeWidth={1.5} /><span>再记一张</span></button
+        {#if filter === 'active' && !hasFilters}<button
+            class="add-card"
+            onclick={create}
+            disabled={busy}><Plus size={22} strokeWidth={1.5} /><span>再记一张</span></button
           >{/if}
       </div>
     {:else}
       <div class="empty-state">
         <div class="empty-paper"><StickyNote size={42} strokeWidth={1.2} /></div>
         <h2>
-          {query
+          {hasFilters
             ? '没有找到这张便签'
             : filter === 'active'
               ? '给小想法，留个位置'
               : '这里暂时没有便签'}
         </h2>
         <p>
-          {query
-            ? '换个关键词试试。'
+          {hasFilters
+            ? '换个关键词，或清除时间筛选试试。'
             : filter === 'active'
               ? '一句提醒、一个灵感，或者今天要做的小事。'
               : '你的便签会在需要时出现在这里。'}
         </p>
-        {#if filter === 'active' && !query}<button class="primary" onclick={create}
+        {#if filter === 'active' && !hasFilters}<button class="primary" onclick={create}
             ><Plus size={17} />写下第一张便签</button
           >{/if}
       </div>
