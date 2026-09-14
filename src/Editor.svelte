@@ -84,7 +84,7 @@
     titleInput?.select();
   }
 
-  function formatText(kind: 'bold' | 'italic' | 'underline') {
+  function formatText(kind: 'bold' | 'italic' | 'underline' | 'strike') {
     if (updating) return;
     if (view.markdown) {
       richEditor?.format(kind);
@@ -102,7 +102,13 @@
       return;
     if (sourceSelection) editor.setSelectionRange(sourceSelection.start, sourceSelection.end);
     const [left, right] =
-      kind === 'bold' ? ['**', '**'] : kind === 'italic' ? ['_', '_'] : ['<u>', '</u>'];
+      kind === 'bold'
+        ? ['**', '**']
+        : kind === 'italic'
+          ? ['_', '_']
+          : kind === 'strike'
+            ? ['~~', '~~']
+            : ['<u>', '</u>'];
     let start = editor.selectionStart;
     let end = editor.selectionEnd;
     const selected = text.slice(start, end) || '文字';
@@ -216,9 +222,9 @@
             },
           })),
           { item: 'Separator' },
-          ...(['bold', 'italic', 'underline'] as const).map((kind, i) => ({
+          ...(['bold', 'italic', 'underline', 'strike'] as const).map((kind, i) => ({
             id: `${noteId}:format-${kind}`,
-            text: ['加粗', '斜体', '下划线'][i],
+            text: ['加粗', '斜体', '下划线', '删除线（Ctrl+Shift+S）'][i],
             checked: view.markdown ? richEditor?.active(kind) : false,
             enabled: !!editable,
             action: () => formatText(kind),
@@ -606,6 +612,11 @@
       void editTitle().catch((e) => (failure = String(e)));
     }
     if ((event.ctrlKey || event.metaKey) && event.target === editor) {
+      if (event.shiftKey && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        formatText('strike');
+        return;
+      }
       const kind = ({ b: 'bold', i: 'italic', u: 'underline' } as const)[
         event.key.toLowerCase() as 'b' | 'i' | 'u'
       ];

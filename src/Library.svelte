@@ -296,7 +296,7 @@
           ><LogOut size={16} />退出haonote</button
         >{/if}
       <UpdatePanel oninstall={installUpdate} />
-      <span class="version">haonote · 0.1.5</span>
+      <span class="version">haonote · 0.1.6</span>
     </div>
   </aside>
 

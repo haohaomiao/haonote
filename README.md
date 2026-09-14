@@ -4,7 +4,7 @@
 
 一个以 Windows、Linux 为目标的简洁桌面便签。打开就写，本地自动保存，通过自己的坚果云或 WebDAV 账号同步。
 
-当前为 **0.1.5 预发布版**。安装包见 [GitHub Releases](https://github.com/haohaomiao/haonote/releases)，更新内容见 [0.1.5 版本说明](docs/releases/v0.1.5.md)。Windows 安装包尚未实机验证；手机安装包尚未实现。
+当前为 **0.1.6 预发布版**。安装包见 [GitHub Releases](https://github.com/haohaomiao/haonote/releases)，更新内容见 [0.1.6 版本说明](docs/releases/v0.1.6.md)。Windows 安装包尚未实机验证；手机安装包尚未实现。
 
 应用内自动更新暂时搁置，升级请手动下载安装包。发布流程不需要签名密钥，也不发布更新渠道；相关设计暂留在 [更新机制与首次配置](docs/UPDATES.md)。
 
@@ -34,7 +34,7 @@
 
 排版编辑使用 [Tiptap Markdown](https://tiptap.dev/docs/editor/markdown/getting-started/basic-usage)，只读预览经过 [DOMPurify](https://github.com/cure53/DOMPurify) 过滤。所有依赖本地打包，没有新增联网编辑服务。
 
-升级沿用原正式版资料库与同步配置，安装前请导出 JSON 备份并正常退出旧版。安装说明见 [版本说明](docs/releases/v0.1.5.md)，上传源码见 [GitHub 发布指南](docs/GITHUB.md)。
+升级沿用原正式版资料库与同步配置，安装前请导出 JSON 备份并正常退出旧版。安装说明见 [版本说明](docs/releases/v0.1.6.md)，上传源码见 [GitHub 发布指南](docs/GITHUB.md)。
 
 ### 配置坚果云
 

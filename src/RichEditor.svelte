@@ -51,12 +51,13 @@
     if (instance)
       selection = { from: instance.state.selection.from, to: instance.state.selection.to };
   }
-  export function format(kind: 'bold' | 'italic' | 'underline') {
+  export function format(kind: 'bold' | 'italic' | 'underline' | 'strike') {
     if (!instance || disabled || warning) return;
     let command = instance.chain().focus();
     if (selection) command = command.setTextSelection(selection);
     if (kind === 'bold') command.toggleBold().run();
     else if (kind === 'italic') command.toggleItalic().run();
+    else if (kind === 'strike') command.toggleStrike().run();
     else command.toggleUnderline().run();
     captureSelection();
   }

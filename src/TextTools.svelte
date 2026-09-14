@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Bold, Italic, Underline } from '@lucide/svelte';
+  import { Bold, Italic, Underline, Strikethrough } from '@lucide/svelte';
   import { fonts, type NoteView, type ViewPatch } from './types';
   let {
     view,
@@ -11,7 +11,7 @@
     view: NoteView;
     busy?: boolean;
     disabled?: boolean;
-    onformat: (kind: 'bold' | 'italic' | 'underline') => void;
+    onformat: (kind: 'bold' | 'italic' | 'underline' | 'strike') => void;
     onchange: (patch: ViewPatch) => void;
   } = $props();
 </script>
@@ -37,6 +37,13 @@
     {disabled}
     onpointerdown={(e) => e.preventDefault()}
     onclick={() => onformat('underline')}><Underline size={15} /></button
+  >
+  <button
+    aria-label="删除线"
+    title="删除线（Ctrl/Cmd+Shift+S）"
+    {disabled}
+    onpointerdown={(e) => e.preventDefault()}
+    onclick={() => onformat('strike')}><Strikethrough size={15} /></button
   >
   <select
     aria-label="正文字体"
