@@ -12,6 +12,38 @@ fn error(e: impl std::fmt::Display) -> String {
     e.to_string()
 }
 
+#[tauri::command]
+pub fn note_history(
+    state: State<'_, AppState>,
+    note_id: String,
+    offset: usize,
+) -> CommandResult<Vec<qingnote_core::Revision>> {
+    state
+        .store
+        .lock()
+        .unwrap()
+        .history(&note_id, offset)
+        .map_err(error)
+}
+
+#[tauri::command]
+pub fn restore_revision(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    note_id: String,
+    revision_id: String,
+    expected: String,
+) -> CommandResult<Note> {
+    let note = state
+        .store
+        .lock()
+        .unwrap()
+        .restore_revision(&note_id, &revision_id, &expected)
+        .map_err(error)?;
+    let _ = app.emit("notes-changed", &note.id);
+    Ok(note)
+}
+
 pub fn credential_entry(app: &AppHandle) -> Result<keyring::Entry> {
     Ok(keyring::Entry::new(
         "app.qingnote.webdav",

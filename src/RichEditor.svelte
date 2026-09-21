@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { Editor } from '@tiptap/core';
   import { closeHistory } from '@tiptap/pm/history';
+  import { EditorState } from '@tiptap/pm/state';
   import DOMPurify from 'dompurify';
   import { richExtensions, sameMarkdownMeaning, unsupportedMarkdown } from './rich-text';
   import { renderMarkdown } from './markdown';
@@ -40,7 +41,16 @@
     warning = '';
     try {
       if (unsupportedMarkdown(source)) throw new Error('unsupported');
-      instance.commands.setContent(source, { contentType: 'markdown', emitUpdate: false });
+      instance
+        .chain()
+        .setMeta('addToHistory', false)
+        .setContent(source, { contentType: 'markdown', emitUpdate: false })
+        .run();
+      // Loaded/synced content is a new baseline, not a user edit. Reinitialize
+      // plugin state so old undo/redo steps cannot overwrite an external version.
+      const { doc, selection: currentSelection, plugins } = instance.state;
+      instance.view.updateState(EditorState.create({ doc, selection: currentSelection, plugins }));
+      selection = undefined;
       if (!sameMarkdownMeaning(source, instance.getMarkdown())) throw new Error('lossy');
     } catch {
       warning = '这段内容含暂不支持直接编辑的语法。源码已保留，请切换源码修改。';
@@ -87,6 +97,17 @@
       content: '',
       injectCSS: false,
       editorProps: {
+        handleKeyDown: (_view, event) => {
+          if (!(event.ctrlKey || event.metaKey) || event.altKey || event.isComposing) return false;
+          const key = event.key.toLowerCase();
+          if (key !== 'z' && key !== 'y') return false;
+          // Consume even an empty history: never fall through to WebView DOM undo.
+          if (canEdit()) {
+            if (key === 'y' || event.shiftKey) instance!.commands.redo();
+            else instance!.commands.undo();
+          }
+          return true;
+        },
         // In-editor dragging moves the selection; external drops remain inserts.
         dragCopies: () => false,
         attributes: {

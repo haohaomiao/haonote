@@ -45,7 +45,7 @@ impl Dav {
             .connect_timeout(Duration::from_secs(10))
             .timeout(Duration::from_secs(30))
             .redirect(reqwest::redirect::Policy::none())
-            .user_agent("haonote/0.1.6")
+            .user_agent("haonote/0.1.7")
             .build()?;
         let root = base.join("v1/")?;
         Ok(Self {
@@ -175,13 +175,15 @@ impl Dav {
             self.store.lock().unwrap().receive(&r)?;
             outcome.downloaded += 1;
         }
-        let local = {
+        let (batch, missing) = {
             let mut store = self.store.lock().unwrap();
+            if outcome.downloaded == unknown.len() {
+                store.auto_merge()?;
+            }
             store.seal_drafts()?;
-            store.all()?
+            store.upload_batch(&remote, 12)?
         };
-        let missing: Vec<_> = local.iter().filter(|r| !remote.contains(&r.id)).collect();
-        for r in missing.iter().take(12) {
+        for r in &batch {
             let url = self.root.join(&format!("{}.json", r.id))?;
             let response = self
                 .request(Method::PUT, url.clone(), Some(serde_json::to_string(r)?))
@@ -192,7 +194,7 @@ impl Dav {
                 check(response.status())?;
                 let existing: Revision =
                     serde_json::from_str(&read_limited(response, MAX_OBJECT).await?)?;
-                if existing != **r {
+                if existing != *r {
                     bail!("云端同名版本内容不一致，已停止上传");
                 }
             } else {
@@ -201,16 +203,8 @@ impl Dav {
             self.store.lock().unwrap().mark_uploaded(&r.id)?;
             outcome.uploaded += 1;
         }
-        {
-            let mut store = self.store.lock().unwrap();
-            for r in &local {
-                if remote.contains(&r.id) {
-                    store.mark_uploaded(&r.id)?;
-                }
-            }
-        }
         outcome.remaining = unknown.len().saturating_sub(outcome.downloaded)
-            + missing.len().saturating_sub(outcome.uploaded);
+            + missing.saturating_sub(outcome.uploaded);
         Ok(outcome)
     }
 }

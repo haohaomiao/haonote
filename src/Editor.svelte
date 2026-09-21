@@ -29,6 +29,7 @@
   } from './types';
   import RichEditor from './RichEditor.svelte';
   import TextTools from './TextTools.svelte';
+  import HistoryDialog from './HistoryDialog.svelte';
 
   let {
     noteId,
@@ -36,6 +37,20 @@
     onclose = () => {},
   }: { noteId: string; standalone?: boolean; onclose?: () => void } = $props();
   let note = $state<Note | null>(null);
+  let historyOpen = $state(false);
+  async function openHistory() {
+    try {
+      if (composing || updating || historyOpen) return;
+      await flush();
+      // A collapsed native window must have enough space for the history dialog.
+      if (view.collapsed) await changeView({ collapsed: false });
+      menu = false;
+      textMenu = null;
+      historyOpen = true;
+    } catch (e) {
+      failure = String(e);
+    }
+  }
   let text = $state('');
   let noteTitle = $state('');
   let titleInput = $state<HTMLInputElement>();
@@ -376,6 +391,9 @@
           item('library', '打开便签列表', () => {
             void openLibrary();
           }),
+          item('history', '历史版本…', () => {
+            void openHistory();
+          }),
           item('archive', '归档便签', () => {
             void action('archive');
           }),
@@ -458,7 +476,7 @@
     }
   }
   async function close() {
-    if (closing || updating) return;
+    if (closing || updating || historyOpen) return;
     closing = true;
     try {
       await flush();
@@ -536,7 +554,7 @@
             (token) => {
               void (async () => {
                 try {
-                  if (composing) throw new Error('请先完成输入法输入');
+                  if (composing || historyOpen) throw new Error('请先完成编辑并关闭历史窗口');
                   updating = true;
                   menu = false;
                   textMenu = null;
@@ -606,7 +624,7 @@
       menu = false;
   }}
   onkeydown={(event) => {
-    if (updating) return;
+    if (updating || historyOpen) return;
     if (event.key === 'F2') {
       event.preventDefault();
       void editTitle().catch((e) => (failure = String(e)));
@@ -643,7 +661,7 @@
 />
 
 <section
-  inert={updating}
+  inert={updating || historyOpen}
   class:standalone
   class:collapsed={view.collapsed}
   class="editor note-{color}"
@@ -709,6 +727,7 @@
   {#if !view.collapsed}
     {#if menu}
       <div class="editor-options">
+        <button class="text-button" onclick={openHistory}>历史版本…</button>
         <TextTools
           {view}
           busy={viewBusy}
@@ -904,6 +923,11 @@
     {/if}
   {/if}
 </section>
+{#if historyOpen}<HistoryDialog
+    {noteId}
+    onclose={() => (historyOpen = false)}
+    onrestored={refresh}
+  />{/if}
 {#if textMenu}
   <div
     class="text-context-menu"

@@ -80,6 +80,8 @@ pub fn run() {
         .on_window_event(windows::handle_event)
         .invoke_handler(tauri::generate_handler![
             commands::list_notes,
+            commands::note_history,
+            commands::restore_revision,
             commands::save_note,
             commands::resolve_note,
             commands::get_settings,
